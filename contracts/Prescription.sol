@@ -4,26 +4,35 @@ pragma experimental ABIEncoderV2;
 /*
     SPDX-License-Identifier: UNLICENSED
     Assumptions:
+    - Coded for a 'smart user'
+    - Basic implementation which assumes only basic data required
+    - Assumes standardized units
+    - Not tolerant of anomalies; use notes to best of ability
+    - Gas price/TX fee not considered; could be better implemented in different chain (see discussion)
 */
 
 contract Prescription
 {
-    enum Sex{Male, Female, Other}
-    
-    address internal owner;
+    enum Sex //create enum for possible sexes
+    {
+        Male,
+        Female,
+        Other
+    }
 
-    
+    address internal owner; //initiates owner address variable
+
     mapping(address => bool) pharmaList; //mapping for verified pharmacies
-    
-    struct Patient
+
+    struct Patient //records information about patient (can be modified to include additional)
     {
         string name;
         uint weight;
         uint height;
         Sex sex;
     }
-    
-    struct Drug
+
+    struct Drug //records information about drug
     {
         string name;
         uint256 strength;
@@ -32,43 +41,43 @@ contract Prescription
         uint256 dosage;
         string notes;
     }
-    
-    Patient patient = Patient("name",0,0,Sex.Other);
-    
-    Drug[] drugList;
-    
-    constructor() public
+
+    Patient patient = Patient("name",0,0,Sex.Other); //null initiator of a patient
+
+    Drug[] drugList; //dynamic array of medical prescription data
+
+    constructor() public //initiate owner as the contract deployer
     {
         owner = msg.sender;
     }
-    
-    modifier onlyOwner()
+
+    modifier onlyOwner() //permissioned to owner only
     {
         require(msg.sender == owner, "You must be the owner.");
         _;
     }
-    
-    modifier onlyMedical()
+
+    modifier onlyMedical() //permissioned to medical professionals only
     {
         require(pharmaList[msg.sender] == true, "You must be a verified pharmacist.");
         _;
     }
-    
-    function personalInfo(string memory _name, uint _weight, uint _height, string memory _sex) public onlyMedical
+
+    function personalInfo(string memory _name, uint _weight, uint _height, string memory _sex) public onlyMedical //fill in patient information
     {
         patient.name = _name;
         patient.weight = _weight;
         patient.height = _height;
-        if (strcmp("female", _sex))
+        if (strcmp("female", _sex)) //translate entered string to enum
         {
             patient.sex = Sex.Female;
         }
-        else if (strcmp("male", _sex))
+        else if (strcmp("male", _sex)) //translate entered string to enum
         {
             patient.sex = Sex.Male;
         }
     }
-    
+
     function makePurchase (string memory name) public onlyMedical
     {
         for (uint i = 0; i<drugList.length; i++)
@@ -94,7 +103,7 @@ contract Prescription
         pharmaList[check] = false;
     }
 
-    function addDrug (string memory tempName, uint256 tempStrength, uint256 tempQuantity, ...
+    function addDrug (string memory tempName, uint256 tempStrength, uint256 tempQuantity,
     uint256 tempRefills, uint256 tempDosage) public onlyMedical
     {
         drugList.push(Drug(tempName, tempStrength, tempQuantity, tempRefills, tempDosage, "none"));
@@ -124,8 +133,8 @@ contract Prescription
             return keccak256(aBytes) == keccak256(bBytes);
         }
     }
-    
-    function getPrescription() public view returns (Drug[] memory) 
+
+    function getPrescription() public view returns (Drug[] memory)
     {
         return drugList;
     }
