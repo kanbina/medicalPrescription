@@ -20,13 +20,15 @@ contract Prescription
         Other
     }
 
+    uint id;
+
     address internal owner; //initiates owner address variable
 
     mapping(address => bool) pharmaList; //mapping for verified pharmacies
 
     struct Patient //records information about patient (can be modified to include additional)
     {
-        string name;
+        uint id; //no name on-chain for privacy
         uint weight;
         uint height;
         Sex sex;
@@ -34,20 +36,20 @@ contract Prescription
 
     struct Drug //records information about drug
     {
-        string name;
-        uint256 strength;
-        uint256 totalQuantity;
-        uint256 numRefills;
-        uint256 dosage;
+        uint sku; //easier to identify without confusion about names/abbreviations
+        uint totalQuantity;
+        uint numRefills;
+        uint dosage;
         string notes;
     }
 
-    Patient patient = Patient("name",0,0,Sex.Other); //null initiator of a patient
+    Patient patient = Patient(0,0,0,Sex.Other); //null initiator of a patient
 
     Drug[] drugList; //dynamic array of medical prescription data
 
     constructor() public //initiate owner as the contract deployer
     {
+        id = 1;
         owner = msg.sender;
     }
 
@@ -63,9 +65,9 @@ contract Prescription
         _;
     }
 
-    function personalInfo(string memory _name, uint _weight, uint _height, string memory _sex) public onlyMedical //fill in patient information
+    function personalInfo(uint _weight, uint _height, string memory _sex) public onlyMedical //fill in patient information
     {
-        patient.name = _name;
+        patient.id = id;
         patient.weight = _weight;
         patient.height = _height;
         if (strcmp("female", _sex)) //translate entered string to enum
@@ -78,11 +80,11 @@ contract Prescription
         }
     }
 
-    function makePurchase (string memory name) public onlyMedical
+    function makePurchase (uint _sku) public onlyMedical
     {
         for (uint i = 0; i<drugList.length; i++)
         {
-            if ((strcmp(drugList[i].name, name)) && (drugList[i].numRefills > 0))
+            if ((drugList[i].sku == _sku) && (drugList[i].numRefills > 0))
             {
                 drugList[i].numRefills--;
             }
@@ -103,17 +105,16 @@ contract Prescription
         pharmaList[check] = false;
     }
 
-    function addDrug (string memory tempName, uint256 tempStrength, uint256 tempQuantity,
-    uint256 tempRefills, uint256 tempDosage) public onlyMedical
+    function addDrug (uint _sku, uint _quantity, uint _refills, uint _dosage) public onlyMedical
     {
-        drugList.push(Drug(tempName, tempStrength, tempQuantity, tempRefills, tempDosage, "none"));
+        drugList.push(Drug(_sku, _quantity, _refills, _dosage, "none"));
     }
 
-    function addNote (string memory name, string memory _newNotes) public onlyMedical
+    function addNote (uint _sku, string memory _newNotes) public onlyMedical
     {
         for (uint i = 0; i<drugList.length; i++)
         {
-            if (strcmp(drugList[i].name, name))
+            if (drugList[i].sku == _sku)
             {
                 drugList[i].notes = _newNotes;
             }
